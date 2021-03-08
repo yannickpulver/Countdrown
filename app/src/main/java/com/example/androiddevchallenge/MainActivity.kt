@@ -18,10 +18,31 @@ package com.example.androiddevchallenge
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.DraggableState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -31,20 +52,26 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.androiddevchallenge.ui.TimerViewModel
 import com.example.androiddevchallenge.ui.theme.MyTheme
+import com.example.androiddevchallenge.ui.theme.blue500
+import com.example.androiddevchallenge.ui.theme.red500
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.accompanist.insets.ProvideWindowInsets
+import timber.log.Timber
 
+@ExperimentalAnimationApi
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,19 +87,45 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+
+// max it to 24min 3 seconds
+
 // Start building your app here!
+@ExperimentalAnimationApi
 @Composable
 fun MyApp() {
     val viewModel: TimerViewModel = viewModel()
     val state by viewModel.state.collectAsState()
 
     Surface(color = MaterialTheme.colors.background) {
+
+        if (state.ringing) {
+            val value by animateFloatAsState(
+                targetValue = 1f,
+                animationSpec = snap(delayMillis = 1000)
+            )
+       // AnimatedVisibility(visible = state.ringing, exit = fadeOut(0f), enter = fadeIn(0f, animationSpec = tween(durationMillis = 1000, easing = LinearEasing))) {
+            Box(modifier = Modifier.fillMaxSize().background(red500).alpha(value))
+        }
+
+        FloatingBackground(state.progress)
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "${state.minutes}:${state.seconds}", style = MaterialTheme.typography.h1)
+            if (state.isPaused) {
+                // Reverting delta for more natural feel
+                val minutesState = rememberDraggableState { viewModel.offsetMinutes((-it / 50)) }
+                val secondsState = rememberDraggableState { viewModel.offsetSeconds((-it / 50)) }
+                DraggableClock(state.niceMinutes, state.niceSeconds, minutesState, secondsState)
+            } else {
+                Text(
+                    text = "${state.niceMinutes}:${state.niceSeconds}",
+                    style = MaterialTheme.typography.h1
+                )
+            }
+
             if (state.isPaused) {
                 PlayButton { viewModel.play() }
             } else {
@@ -83,19 +136,82 @@ fun MyApp() {
 }
 
 @Composable
+private fun FloatingBackground(progress: Float) {
+    val duration = if (progress == 1f) 200 else 1000
+
+    val backgroundProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = duration, easing = LinearEasing)
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(backgroundProgress)
+                .background(blue500)
+        )
+    }
+}
+
+@Composable
+private fun DraggableClock(
+    minutes: String,
+    seconds: String,
+    minutesDragState: DraggableState,
+    secondsDragState: DraggableState
+) {
+    Row {
+        Text(
+            text = minutes,
+            style = MaterialTheme.typography.h1,
+            modifier = Modifier.draggable(
+                orientation = Orientation.Vertical,
+                state = minutesDragState
+
+            )
+        )
+        Text(text = ":", style = MaterialTheme.typography.h1)
+        Text(
+            text = seconds,
+            style = MaterialTheme.typography.h1,
+            modifier = Modifier.draggable(
+                orientation = Orientation.Vertical,
+                state = secondsDragState
+            )
+        )
+    }
+}
+
+@Composable
 private fun PauseButton(onClick: () -> Unit) {
-    Button(onClick = onClick) {
+    FlatButton(onClick) {
         Icon(Icons.Filled.Pause, contentDescription = "Pause")
     }
 }
 
 @Composable
 private fun PlayButton(onClick: () -> Unit) {
-    Button(onClick = onClick) {
+    FlatButton(onClick) {
         Icon(Icons.Filled.PlayArrow, contentDescription = "Pause")
     }
 }
 
+@Composable
+private fun FlatButton(onClick: () -> Unit, content: @Composable RowScope.() -> Unit) {
+    Button(
+        onClick = onClick,
+        elevation = ButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
+        colors = ButtonDefaults.textButtonColors(
+            backgroundColor = MaterialTheme.colors.primary.copy(0.5f)
+        ),
+        content = content
+    )
+}
+
+
+@ExperimentalAnimationApi
 @Preview("Light Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun LightPreview() {
@@ -104,6 +220,7 @@ fun LightPreview() {
     }
 }
 
+@ExperimentalAnimationApi
 @Preview("Dark Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun DarkPreview() {

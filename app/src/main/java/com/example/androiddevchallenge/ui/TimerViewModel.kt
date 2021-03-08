@@ -15,14 +15,10 @@
  */
 package com.example.androiddevchallenge.ui
 
-import android.os.CountDownTimer
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,10 +27,13 @@ class TimerViewModel @Inject constructor() : BaseViewModel() {
     private val _state = MutableStateFlow(Timer.default())
     val state: StateFlow<Timer> = _state
 
-    private var countDownTimer: CountDownTimer? = null
+    private var countDownTimer: CountDownTimerExtended? = null
+
+    private val maxMinutes = 24f
+    private val maxSeconds = 59f
 
     fun play() {
-        updateState { it.copy(isPaused = false) }
+        updateState { it.copy(isPaused = false, progress = 1f) }
         countDownTimer = getCountdown(_state.value).apply { start() }
     }
 
@@ -43,18 +42,41 @@ class TimerViewModel @Inject constructor() : BaseViewModel() {
         countDownTimer?.cancel()
     }
 
-    private fun getCountdown(timer: Timer) : CountDownTimer {
-        val millis = timer.minutes * 1000 * 60 + timer.seconds * 1000
 
-        return object : CountDownTimer(millis, 1000) {
+    fun offsetMinutes(offset: Float) = updateState {
+        var minutes = (it.minutes + offset)
+        minutes = (if (minutes < 0) minutes + (maxMinutes + 1) else minutes) % (maxMinutes + 1)
+        it.copy(minutes = minutes, progress = 0f)
+    }
+
+    fun offsetSeconds(offset: Float) = updateState {
+        var seconds = (it.seconds + offset)
+        seconds = (if (seconds < 0) seconds + (maxSeconds + 1) else seconds) % (maxSeconds + 1)
+        it.copy(seconds = seconds, progress = 0f)
+    }
+
+    private fun getCountdown(timer: Timer): CountDownTimerExtended {
+        val millis =
+            timer.minutes.toLong() * 1000 * 60 + timer.seconds.toLong() * 1000 + 999 // Padding otherwise counter jumps around
+
+        return object : CountDownTimerExtended(millis, 1000) {
             override fun onTick(millis: Long) {
+                super.onTick(millis)
                 val minutes = millis / 1000 / 60
                 val seconds = millis / 1000 % 60
-                updateState { it.copy(minutes = minutes, seconds = seconds) }
+                val progress =
+                    if (tickCount == 1) 1f else millis.toFloat() / millisInFuture.toFloat()
+                updateState {
+                    it.copy(
+                        minutes = minutes.toFloat(),
+                        seconds = seconds.toFloat(),
+                        progress = progress
+                    )
+                }
             }
 
             override fun onFinish() {
-                TODO("Not yet implemented")
+                updateState { it.copy(progress = 0f) }
             }
         }
     }
