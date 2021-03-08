@@ -42,7 +42,6 @@ class TimerViewModel @Inject constructor() : BaseViewModel() {
         countDownTimer?.cancel()
     }
 
-
     fun offsetMinutes(offset: Float) = updateState {
         var minutes = (it.minutes + offset)
         minutes = (if (minutes < 0) minutes + (maxMinutes + 1) else minutes) % (maxMinutes + 1)
@@ -81,12 +80,10 @@ class TimerViewModel @Inject constructor() : BaseViewModel() {
         }
     }
 
-
     @Synchronized
     private fun updateState(callback: (Timer) -> Timer) = ioScope.launch {
         val oldState = _state.value
         val newState = callback(oldState)
         _state.emit(newState)
     }
-
 }

@@ -18,16 +18,11 @@ package com.example.androiddevchallenge
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
@@ -53,8 +48,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,7 +62,6 @@ import com.example.androiddevchallenge.ui.theme.blue500
 import com.example.androiddevchallenge.ui.theme.red500
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.accompanist.insets.ProvideWindowInsets
-import timber.log.Timber
 
 @ExperimentalAnimationApi
 @AndroidEntryPoint
@@ -87,7 +79,6 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-
 // max it to 24min 3 seconds
 
 // Start building your app here!
@@ -104,7 +95,7 @@ fun MyApp() {
                 targetValue = 1f,
                 animationSpec = snap(delayMillis = 1000)
             )
-       // AnimatedVisibility(visible = state.ringing, exit = fadeOut(0f), enter = fadeIn(0f, animationSpec = tween(durationMillis = 1000, easing = LinearEasing))) {
+            // AnimatedVisibility(visible = state.ringing, exit = fadeOut(0f), enter = fadeIn(0f, animationSpec = tween(durationMillis = 1000, easing = LinearEasing))) {
             Box(modifier = Modifier.fillMaxSize().background(red500).alpha(value))
         }
 
@@ -209,7 +200,6 @@ private fun FlatButton(onClick: () -> Unit, content: @Composable RowScope.() -> 
         content = content
     )
 }
-
 
 @ExperimentalAnimationApi
 @Preview("Light Theme", widthDp = 360, heightDp = 640)
