@@ -19,10 +19,16 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
@@ -36,6 +42,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
@@ -48,16 +55,18 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.androiddevchallenge.ui.TimerViewModel
 import com.example.androiddevchallenge.ui.theme.MyTheme
+import com.example.androiddevchallenge.ui.theme.blue300
 import com.example.androiddevchallenge.ui.theme.blue500
 import com.example.androiddevchallenge.ui.theme.red500
 import dagger.hilt.android.AndroidEntryPoint
@@ -93,10 +102,15 @@ fun MyApp() {
         if (state.ringing) {
             val value by animateFloatAsState(
                 targetValue = 1f,
-                animationSpec = snap(delayMillis = 1000)
+                animationSpec = snap(delayMillis = 1500)
             )
             // AnimatedVisibility(visible = state.ringing, exit = fadeOut(0f), enter = fadeIn(0f, animationSpec = tween(durationMillis = 1000, easing = LinearEasing))) {
-            Box(modifier = Modifier.fillMaxSize().background(red500).alpha(value))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(red500)
+                    .alpha(value)
+            )
         }
 
         FloatingBackground(state.progress)
@@ -129,20 +143,75 @@ fun MyApp() {
 @Composable
 private fun FloatingBackground(progress: Float) {
     val duration = if (progress == 1f) 200 else 1000
+    val easing = if (progress == 1f) FastOutLinearInEasing else LinearEasing
 
     val backgroundProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = duration, easing = LinearEasing)
+        animationSpec = tween(durationMillis = duration, easing = easing)
+    )
+
+    val infiniteTransition = rememberInfiniteTransition()
+
+    val offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    val infiniteTransition2 = rememberInfiniteTransition()
+    val offset2 by infiniteTransition2.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        )
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .fillMaxHeight(backgroundProgress)
-                .background(blue500)
-        )
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .height(100.dp)
+                    .fillMaxWidth(),
+                onDraw = {
+
+                    val path2 = getWave(size.height, size.width * 2)
+                    path2.translate(Offset(-size.width * offset2, 0f))
+                    drawPath(path2, blue300)
+
+                    val path = getWave(size.height, size.width * 2)
+                    path.translate(Offset(-size.width * offset, 0f))
+                    drawPath(path, blue500)
+                }
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .background(blue500)
+            )
+        }
+    }
+}
+
+private fun getWave(h: Float, w: Float): Path {
+    return Path().apply {
+        moveTo(0f, h * 0.5f)
+        quadraticBezierTo(w * 0.125f, h * 0.25f, w * 0.25f, h * 0.5f)
+        quadraticBezierTo(w * 0.375f, h * 0.75f, w * 0.5f, h * 0.5f)
+        quadraticBezierTo(w * 0.625f, h * 0.25f, w * 0.75f, h * 0.5f)
+        quadraticBezierTo(w * 0.875f, h * 0.75f, w, h * 0.5f)
+        lineTo(w, h)
+        lineTo(0f, h)
     }
 }
 
