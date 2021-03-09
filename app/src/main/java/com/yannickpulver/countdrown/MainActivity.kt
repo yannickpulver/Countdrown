@@ -19,7 +19,6 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -77,7 +76,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.accompanist.insets.ProvideWindowInsets
 import dev.chrisbanes.accompanist.insets.navigationBarsPadding
 
-@ExperimentalAnimationApi
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,7 +94,6 @@ class MainActivity : AppCompatActivity() {
 // max it to 24min 3 seconds
 
 // Start building your app here!
-@ExperimentalAnimationApi
 @Composable
 fun MyApp() {
     val viewModel: TimerViewModel = viewModel()
@@ -287,7 +284,6 @@ private fun FlatButton(onClick: () -> Unit, content: @Composable RowScope.() -> 
     )
 }
 
-@ExperimentalAnimationApi
 @Preview("Light Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun LightPreview() {
@@ -296,7 +292,6 @@ fun LightPreview() {
     }
 }
 
-@ExperimentalAnimationApi
 @Preview("Dark Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun DarkPreview() {
